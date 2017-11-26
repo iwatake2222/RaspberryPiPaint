@@ -15,10 +15,8 @@ import TpTsc2046SPI
 
 I2C_LCD = 0
 I2C_TP = 1
-GPIO_PIN_LCD_CS = 24
-GPIO_PIN_LCD_DC = 19
-GPIO_PIN_TP_CS = 26
-GPIO_PIN_TP_IRQ = 13
+GPIO_PIN_LCD_DC = 26
+GPIO_PIN_TP_IRQ = 19
 
 lcd = None
 tp = None
@@ -31,8 +29,8 @@ def touchCallback(pin):
 
 def initializeDevice():
 	global lcd, tp
-	lcd = LcdIli9341SPI.LcdIli9341SPI(0, I2C_LCD, GPIO_PIN_LCD_CS, GPIO_PIN_LCD_DC)
-	tp = TpTsc2046SPI.TpTsc2046SPI(0, I2C_TP, GPIO_PIN_TP_CS, GPIO_PIN_TP_IRQ, touchCallback)
+	lcd = LcdIli9341SPI.LcdIli9341SPI(0, I2C_LCD, GPIO_PIN_LCD_DC)
+	tp = TpTsc2046SPI.TpTsc2046SPI(0, I2C_TP, GPIO_PIN_TP_IRQ, touchCallback)
 	lcd.initialize()
 
 def main():

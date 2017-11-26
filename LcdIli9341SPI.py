@@ -8,10 +8,10 @@ LCD_WIDTH = 320
 LCD_HEIGHT = 240
 
 class LcdIli9341SPI:
-	def __init__(self, bus, device, pinCs, pinDc):
+	def __init__(self, bus, device, pinDc):
 		# initialize spi
 		self.spi = spidev.SpiDev()
-		self.spi.open(0, 0)
+		self.spi.open(bus, device)
 		self.spi.mode = 0b00
 		# self.spi.max_speed_hz = 125 * 1000 * 1000
 		self.spi.max_speed_hz = int(62.5 * 1000 * 1000)
@@ -21,11 +21,8 @@ class LcdIli9341SPI:
 
 		# initialize gpio
 		RPi.GPIO.setmode(RPi.GPIO.BCM)
-		RPi.GPIO.setup(pinCs, RPi.GPIO.OUT)
 		RPi.GPIO.setup(pinDc, RPi.GPIO.OUT)
-		self.pinCs = pinCs
 		self.pinDc = pinDc
-		self.disableCS()
 
 		# do not initialize here, to avoid conflict with other SPI devices
 		# initialize device
@@ -37,25 +34,18 @@ class LcdIli9341SPI:
 	def writeCmd(self, cmd):
 		RPi.GPIO.output(self.pinDc, 0)
 		if isinstance(cmd, list):
-			self.spi.writebytes(cmd)
+			self.spi.xfer(cmd)
 		else:
-			self.spi.writebytes([cmd,])
+			self.spi.xfer([cmd,])
 
 	def writeData(self, data):
 		RPi.GPIO.output(self.pinDc, 1)
 		if isinstance(data, list):
-			self.spi.writebytes(data)
+			self.spi.xfer(data)
 		else:
-			self.spi.writebytes([data,])
-
-	def enableCS(self):
-		RPi.GPIO.output(self.pinCs, 0)
-
-	def disableCS(self):
-		RPi.GPIO.output(self.pinCs, 1)
+			self.spi.xfer([data,])
 
 	def initialize(self):
-		self.enableCS()
 		self.writeCmd(0x01)
 		time.sleep(0.05)
 		self.writeCmd(0x11)
@@ -69,30 +59,23 @@ class LcdIli9341SPI:
 		self.setArea(0, 0, LCD_WIDTH - 1, LCD_HEIGHT - 1)
 		self.writeCmd(0x29)
 		self.writeCmd(0x2C)
-		self.disableCS()
 		self.drawRect(0x0000)
 
-	def setArea(self, x0, y0, x1, y1, setCs = False):
-		if setCs:
-			self.enableCS()
+	def setArea(self, x0, y0, x1, y1):
 		self.writeCmd(0x2A)
 		self.writeData([(x0 >> 8) & 0xFF, x0 & 0xFF, (x1 >> 8) & 0xFF, x1 & 0xFF])
 		self.writeCmd(0x2B)
 		self.writeData([(y0 >> 8) & 0xFF,  y0 & 0xFF, (y1 >> 8) & 0xFF, y1 & 0xFF])
 		self.writeCmd(0x2C)
-		if setCs:
-			self.disableCS()
 
 
 	def drawBuffer(self, buffer, x0 = 0, y0 = 0, x1 = LCD_WIDTH - 1, y1 = LCD_HEIGHT - 1):
-		self.enableCS()
 		self.setArea(x0, y0, x1, y1)
 		RPi.GPIO.output(self.pinDc, 1)
 		width = x1 - x0 + 1
 		height = y1 - y0 + 1
 		for y in range(height):
 			self.spi.writebytes(buffer[ 2 * y * width : 2 * (y + 1) * width])
-		self.disableCS()
 
 	def drawRect(self, color, x0 = 0, y0 = 0, x1 = LCD_WIDTH - 1, y1 = LCD_HEIGHT - 1):
 		width = x1 - x0 + 1
